@@ -1,13 +1,9 @@
-import TelegramBot from 'node-telegram-bot-api';
+import Router from '../Router';
 
-import { CommandHandler } from './Command';
+const router = new Router();
 
-const echo: CommandHandler = async (update: TelegramBot.Update) => {
-  const text = update.message?.text;
-  return { text: text?.replace('/echo', '') ?? 'Echo' };
-};
+router.botCommand('/echo', (chatId, update, bot) => {
+  return bot.sendMessage(chatId, update.message?.text?.replace('/echo', '') ?? 'Echo');
+});
 
-export default {
-  name: 'echo',
-  handler: echo,
-};
+export default router;

@@ -1,0 +1,3 @@
+[submodule "private-commands"]
+	path = functions/src/private-commands
+	url = git://github.com/andrewkuryan/mt-test-private-commands

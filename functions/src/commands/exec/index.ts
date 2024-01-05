@@ -1,16 +1,14 @@
-import { CommandHandler } from '../Command';
-import TelegramBot from 'node-telegram-bot-api';
 import { Command, CommanderError, Option, Argument } from '@commander-js/extra-typings';
 
+import Router from '../../Router';
 import { execCode } from './service';
 import languages from './languages';
 
+const router = new Router();
+
 const defaultLang = 'js';
 
-const exec: CommandHandler = async (update: TelegramBot.Update) => {
-  const [argsLine, ...code] = update.message?.text?.split('\n') ?? [];
-  const args = argsLine?.replace('/exec ', '').split(' ');
-
+async function getCodeOutput(code: string[], args: string[]) {
   let program = new Command();
   let programOutput = '';
 
@@ -52,17 +50,23 @@ const exec: CommandHandler = async (update: TelegramBot.Update) => {
 
     const response = await execCode({ properties: languages[lang].buildOptions(code.join('\n')) });
 
-    return { text: response.stdout || response.stderr || 'Program did not output anything' };
+    return response.stdout || response.stderr || 'Program did not output anything';
   } catch (err: unknown) {
     if (err instanceof CommanderError) {
-      return { text: programOutput };
+      return programOutput;
     } else {
-      return { text: `${err}` };
+      return `${err}`;
     }
   }
-};
+}
 
-export default {
-  name: 'exec',
-  handler: exec,
-};
+router.botCommand('/exec', async (chatId, update, bot) => {
+  const [argsLine, ...code] = update.message?.text?.split('\n') ?? [];
+  const args = argsLine?.replace('/exec ', '').split(' ');
+
+  const output = await getCodeOutput(code, args);
+
+  return bot.sendMessage(chatId, output);
+});
+
+export default router;

@@ -1,7 +1,11 @@
 {
   "name": "mt-test-test",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "author": "Andrew.Kuryan",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/andrewkuryan/mt-test-test"
+  },
   "license": "GPL-3.0",
   "engines": {
     "npm": ">=8.0.0 <9.0.0",
@@ -9,7 +13,6 @@
   },
   "devDependencies": {
     "firebase-tools": "^13.0.2",
-    "prettier": "^3.0.0",
-    "ts-node": "^10.9.2"
+    "prettier": "^3.0.0"
   }
 }

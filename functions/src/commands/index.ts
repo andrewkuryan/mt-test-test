@@ -1,7 +1,10 @@
-import { Command } from './Command';
+import Router from '../Router';
 import echo from './echo';
 import exec from './exec';
 
-const commands: Array<Command> = [echo, exec];
+const router = new Router();
 
-export default commands;
+router.use(echo);
+router.use(exec);
+
+export default router;
