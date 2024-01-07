@@ -3,8 +3,20 @@
     {
       "source": "functions",
       "codebase": "default",
-      "ignore": ["node_modules", ".git", "firebase-debug.log", "firebase-debug.*.log"],
-      "predeploy": ["npm --prefix \"$RESOURCE_DIR\" run build"]
+      "ignore": [
+        "node_modules",
+        ".git",
+        "firebase-debug.log",
+        "firebase-debug.*.log",
+        "package-temp.json",
+        "package-lock-temp.json"
+      ],
+      "predeploy": [
+        "npm --prefix \"$RESOURCE_DIR\" run build",
+        "npm --prefix \"$RESOURCE_DIR\" run merge-deps",
+        "npm --prefix \"$RESOURCE_DIR\" install --save"
+      ],
+      "postdeploy": ["npm --prefix \"$RESOURCE_DIR\" run restore-root-package"]
     }
   ]
 }
