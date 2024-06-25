@@ -1,14 +1,17 @@
+import TelegramBot from 'node-telegram-bot-api';
 import { Command, CommanderError, Option, Argument } from '@commander-js/extra-typings';
+import consumers from 'stream/consumers';
 
 import Router from '../../Router';
+import { MEDIA_GROUP_MIDDLEWARE_NAME, MediaGroupMiddleware } from '../middleware/mediaGroup';
 import { execCode } from './service';
-import languages from './languages';
+import languages, { ExecFile } from './languages';
 
 const router = new Router();
 
 const defaultLang = 'js';
 
-async function getCodeOutput(code: string[], args: string[]) {
+async function getCodeOutput(code: string[], args: string[], files: ExecFile[]) {
   let program = new Command();
   let programOutput = '';
 
@@ -48,7 +51,9 @@ async function getCodeOutput(code: string[], args: string[]) {
         .filter(([name, _]) => languages[name])
         .find(([_, value]) => value)?.[0] ?? 'js';
 
-    const response = await execCode({ properties: languages[lang].buildOptions(code.join('\n')) });
+    const response = await execCode({
+      properties: languages[lang].buildOptions(code.join('\n'), files),
+    });
 
     return response.stdout || response.stderr || 'Program did not output anything';
   } catch (err: unknown) {
@@ -60,11 +65,47 @@ async function getCodeOutput(code: string[], args: string[]) {
   }
 }
 
-router.botCommand('/exec', async (chatId, update, bot) => {
-  const [argsLine, ...code] = update.message?.text?.split('\n') ?? [];
+function isDefined<T>(value: T | undefined): value is T {
+  return value !== undefined;
+}
+
+async function getFiles(
+  bot: TelegramBot,
+  update: TelegramBot.Update,
+  mediaGroup: TelegramBot.Update[],
+): Promise<ExecFile[]> {
+  const lastGroupUpdate = [...mediaGroup].sort(
+    (u1, u2) => (u2.message?.message_id ?? 0) - (u1.message?.message_id ?? 0),
+  )[0];
+  const isGroupRecent =
+    (lastGroupUpdate?.message?.message_id ?? 0) == (update.message?.message_id ?? 0) - 1;
+
+  const documents = [
+    update.message?.document,
+    ...(isGroupRecent ? mediaGroup.map(it => it.message?.document) : []),
+  ].filter(isDefined);
+
+  const contents = await Promise.all(
+    documents.map(file => bot.getFileStream(file.file_id)).map(steam => consumers.text(steam)),
+  );
+
+  return contents.map((content, index) => ({
+    name: documents[index].file_name ?? documents[index].file_id,
+    content,
+  }));
+}
+
+router.botCommand('/exec', async (chatId, update, bot, ctx) => {
+  const [argsLine, ...code] = (update.message?.text ?? update.message?.caption)?.split('\n') ?? [];
   const args = argsLine?.replace('/exec ', '').split(' ');
 
-  const output = await getCodeOutput(code, args);
+  const files = await getFiles(
+    bot,
+    update,
+    ctx.getExtra<MediaGroupMiddleware>(MEDIA_GROUP_MIDDLEWARE_NAME)?.updates ?? [],
+  );
+
+  const output = await getCodeOutput(code, args, files);
 
   return bot.sendMessage(chatId, output);
 });

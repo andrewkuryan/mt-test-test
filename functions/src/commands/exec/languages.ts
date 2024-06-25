@@ -1,75 +1,85 @@
 import { ExecutorProperties } from './service';
 
+export interface ExecFile {
+  name: string;
+  content: string;
+}
+
+function buildFiles(
+  code: string,
+  wrapper: (code: string) => string,
+  fileName: string,
+  files: ExecFile[],
+) {
+  return [...(code.length > 0 ? [{ name: fileName, content: wrapper(code) }] : []), ...files];
+}
+
 export default {
   js: {
     name: 'JavaScript',
-    buildOptions: (code: string) => ({
+    buildOptions: (code: string, files: ExecFile[]) => ({
       language: 'nodejs',
-      files: [{ name: 'index.js', content: code }],
+      files: buildFiles(code, it => it, 'index.js', files),
     }),
   },
   kt: {
     name: 'Kotlin',
-    buildOptions: (code: string) => ({
+    buildOptions: (code: string, files: ExecFile[]) => ({
       language: 'kotlin',
-      files: [{ name: 'HelloWorld.kt', content: `fun main(args: Array<String>) { ${code} }` }],
+      files: buildFiles(code, it => `fun main(args: Array<String>) { ${it} }`, 'main.kt', files),
     }),
   },
   java: {
     name: 'Java',
-    buildOptions: (code: string) => ({
+    buildOptions: (code: string, files: ExecFile[]) => ({
       language: 'java',
-      files: [
-        {
-          name: 'Main.java',
-          content: `import java.util.*; public class Main { public static void main(String[] args) { ${code} } }`,
-        },
-      ],
+      files: buildFiles(
+        code,
+        it =>
+          `import java.util.*; public class Main { public static void main(String[] args) { ${it} } }`,
+        'Main.java',
+        files,
+      ),
     }),
   },
   py: {
     name: 'Python',
-    buildOptions: (code: string) => ({
+    buildOptions: (code: string, files: ExecFile[]) => ({
       language: 'python',
-      files: [{ name: 'main.py', content: code }],
+      files: buildFiles(code, it => it, 'main.py', files),
     }),
   },
   clj: {
     name: 'Clojure',
-    buildOptions: (code: string) => ({
+    buildOptions: (code: string, files: ExecFile[]) => ({
       language: 'clojure',
-      files: [{ name: 'HelloWorld.clj', content: code }],
+      files: buildFiles(code, it => it, 'main.clj', files),
     }),
   },
   c: {
     name: 'C',
-    buildOptions: (code: string) => ({
+    buildOptions: (code: string, files: ExecFile[]) => ({
       language: 'c',
-      files: [
-        {
-          name: 'Main.c',
-          content: `#include <stdio.h>\n int main() { ${code} }`,
-        },
-      ],
+      files: buildFiles(code, it => `#include <stdio.h>\n int main() { ${it} }`, 'main.c', files),
     }),
   },
   sh: {
     name: 'Bash',
-    buildOptions: (code: string) => ({
+    buildOptions: (code: string, files: ExecFile[]) => ({
       language: 'bash',
-      files: [{ name: 'HelloWorld.sh', content: code }],
+      files: buildFiles(code, it => it, 'main.sh', files),
     }),
   },
   sql: {
     name: 'MySQL',
-    buildOptions: (code: string) => ({
+    buildOptions: (code: string, files: ExecFile[]) => ({
       language: 'mysql',
-      files: [{ name: 'queries.sql', content: code }],
+      files: buildFiles(code, it => it, 'queries.sql', files),
     }),
   },
 } as {
   [lang: string]: {
     name: string;
-    buildOptions: (code: string) => ExecutorProperties;
+    buildOptions: (code: string, files: ExecFile[]) => ExecutorProperties;
   };
 };
